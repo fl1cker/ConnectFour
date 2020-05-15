@@ -1,0 +1,54 @@
+* {
+    padding: 0;
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+}
+
+body {
+    background-color: black;
+    height: 100vh;
+    width: 100vw;
+}
+
+#game-message, #board {
+    margin: auto;
+}
+
+#game-message, #player-name {
+    font-size: 50px;
+}
+
+#game-message {
+    width: 600px;
+    text-align: center;
+    color: white;
+    margin-bottom: 20px;
+}
+
+#board {
+    background-color: yellow;
+}
+
+.cell {
+    height: 50px;
+    width: 50px;
+    border-radius: 50%;
+}
+
+.empty, #error-message {
+    background-color: white;
+}
+
+.red {
+    background-color: red;
+}
+
+.blue {
+    background-color: rgb(0, 204, 255);
+}
+
+#game-base {
+    border-radius: 5%/20%;
+    background-color: blue;
+}

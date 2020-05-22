@@ -36,10 +36,6 @@ body {
     border-radius: 50%;
 }
 
-.empty, #error-message {
-    background-color: white;
-}
-
 .red {
     background-color: red;
 }

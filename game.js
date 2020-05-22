@@ -1,221 +1,248 @@
 (
     () => {
-        /* Initialization */
-        var height = 6;
-        var width = 8;
-        var isGameOver = false;
-        var showError = false;
+        var _ = self.ConnectBoardView = function (connectBoard, playerManager) {
+            this.connectBoard = connectBoard;
+            this.height = connectBoard.length;
+            this.width = connectBoard[0].length;
+            this.isGameOver = false;
+            this.showError = false;
+            this.playerManager = playerManager;
+        };
 
-        createBoard(height, width);
-        var players = createPlayers();
-        var currentPlayer = players[0];
-        addNewPlayer();
+        _.prototype = {
+            displayBoard: function () {
+                const gameBoard = document.getElementById('board');
+                const tbody = document.createElement('tbody');
+                gameBoard.appendChild(tbody);
 
-        function createPlayers() {
-            const player1 = {
-                id: 0,
-                name: 'Abbott',
-                color: 'red'
-            }
-            const player2 = {
-                id: 1,
-                name: 'Costello',
-                color: 'blue'
-            }
-
-            return [player1, player2];
-        }
-
-        function createBoard(height, width) {
-            const gameBoard = document.getElementById('board');
-            const tbody = document.createElement('tbody');
-            gameBoard.appendChild(tbody);
-
-            for (let i = 0; i < height; i++) {
-                const row = document.createElement('tr');
-                tbody.appendChild(row);
-                for (let j = 0; j < width; j++) {
-                    const cell = document.createElement('td');
-                    cell.setAttribute('position', j.toString() + i.toString());
-                    cell.className = 'cell';
-                    cell.classList.add('empty');
-                    cell.addEventListener('click', executeTurn);
-                    row.appendChild(cell);
+                for (let i = 0; i < this.height; i++) {
+                    const row = document.createElement('tr');
+                    tbody.appendChild(row);
+                    for (let j = 0; j < this.width; j++) {
+                        const cell = document.createElement('td');
+                        cell.setAttribute('position', j.toString() + i.toString());
+                        cell.className = 'cell';
+                        cell.addEventListener('click', executeTurn);
+                        row.appendChild(cell);
+                    }
                 }
+            },
+
+            executeTurn: function (event) {
+                if (isGameOver)
+                    return;
+
+                var placedPosition = placeGamePiece(event.target, this.playerManager.currentPlayer);
+                if (!placedPosition) { return; }
+
+                if (this.connectBoard.calculateWinAny(placedPosition, currentPlayer.id)) {
+                    return endGame();
+                } else {
+                    this.playerManager.togglePlayer();
+                    displayCurrentPlayer(this.playerManager.currentPlayer);
+                }
+            },
+
+            placeGamePiece: function (element, currentPlayer) {
+                const position = getPosition(element);
+                const columnNumber = position[0];
+
+                const placedPosition = this.board.placeGamePieceInColumn(columnNumber, currentPlayer.id);
+
+                if (placedPosition) {
+                    const cell = getCellByPosition(placedPosition[0], placedPosition[1]);
+                    cell.classList.add(playerColor);
+                }
+
+                return placedPosition;
+            },
+
+            getCellByPosition: function (x, y) {
+                return document.querySelector(`[position='${x}${y}'`);
+            },
+
+            getPosition: function (element) {
+                return element.getAttribute('position');
+            },
+
+            endGame: function () {
+                const gameMessageElement = document.getElementById('game-message');
+                gameMessageElement.classList.add(currentPlayer.color);
+                gameMessageElement.innerHTML = `CONGRATULATIONS ${currentPlayer.name}!!`;
+
+                isGameOver = true;
+            },
+
+            displayCurrentPlayer: function (currentPlayer) {
+                const gameMessageElement = document.getElementById('game-message');
+                const nameElement = document.getElementById('player-name');
+
+                gameMessageElement.classList.remove(currentPlayer.color);
+                gameMessageElement.classList.add(currentPlayer.color);
+                nameElement.innerHTML = currentPlayer.name;
             }
-        }
+        };
+    }
+)();
 
-        /* Logic */
-        function executeTurn(event) {
-            if (isGameOver)
-                return;
+(() => {
+    var _ = self.ConnectBoard = function (dimensions) {
+        this.height = dimensions.height;
+        this.width = dimensions.width;
+        this.board;
+    };
 
-            if (showError) {
-                setError('');
+    _.prototype = {
+        createBoard: function () {
+            this.board = new Array(this.height);
+            for (let i = 0; i < this.width; i++) {
+                this.board[i] = new Array(this.width).fill(0); //0 = empty; 1 = player1; 2 = player2
             }
+        },
 
-            var placedPosition = placeGamePiece(event.target);
-        
-            if (calculateWin(placedPosition, currentPlayer.color)) {
-                return endGame();
-            } else {
-                clearOldPlayer();
-                togglePlayer();
-                addNewPlayer();
-            }
-        }
-
-        function setError(message) {
-            if (!message) {
-                document.getElementById('error-message').innerHTML = '';
-                showError = false;
-            } else {
-                document.getElementById('error-message').innerHTML = message;
-                showError = true;
-            }
-        }
-
-        function calculateWin(startingPoint, color) {
-            const x = startingPoint[0];
-            const y = startingPoint[1];
-            if (calculateLeftRight(x, y, color) ||
-                calculateUpDown(x, y, color) ||
-                calculateBackSlash(x, y, color) ||
-                calculateForwardSlash(x, y, color)) {
-                endGame();
-                return true;
-            }
-        }
-
-        function calculateLeftRight(x, y, color) {
-            const startingX = x;
-            let numInARow = 1;
-
-            while (doesMatch(--x, y, color)) {
-                numInARow++;
-            }
-
-            x = startingX;
-
-            while (doesMatch(++x, y, color)) {
-                numInARow++;
-            }
-
-            return numInARow >= 4;
-        }
-
-        function calculateUpDown(x, y, color) {
-            const startingY = y;
-            let numInARow = 1;
-
-            while (doesMatch(x, --y, color)) {
-                numInARow++;
-            }
-
-            y = startingY;
-
-            while (doesMatch(x, ++y, color)) {
-                numInARow++;
-            }
-
-            return numInARow >= 4;
-        }
-
-        function calculateBackSlash(x, y, color) {
-            const startingX = x;
-            const startingY = y;
-            let numInARow = 1;
-
-            while (doesMatch(--x, --y, color)) {
-                numInARow++;
-            }
-
-            y = startingY;
-            x = startingX;
-
-            while (doesMatch(++x, ++y, color)) {
-                numInARow++;
-            }
-
-            return numInARow >= 4;
-        }
-
-        function calculateForwardSlash(x, y, color) {
-            const startingX = x;
-            const startingY = y;
-            let numInARow = 1;
-
-            while (doesMatch(++x, --y, color)) {
-                numInARow++;
-            }
-
-            y = startingY;
-            x = startingX;
-
-            while (doesMatch(--x, ++y, color)) {
-                numInARow++;
-            }
-
-            return numInARow >= 4;
-        }
-
-        function doesMatch(x, y, color) {
-            if (x < 0 || x === width || y < 0 || y === height) {
-                return false;
-            }
-            const cell = getCellByPosition(x, y);
-            const result = cell.classList.contains(color);
-            return result;
-        }
-
-        /* Handle Game */
-        function placeGamePiece(element) {
-            const position = getPosition(element);
-            const columnNumber = position[0];
-
+        placeGamePieceInColumn: function (columnIndex, playerId) {
             for (let i = (height - 1); i >= 0; i--) {
-                const cell = getCellByPosition(columnNumber, i);
-                if (cell.classList.contains('empty')) {
-                    cell.classList.remove('empty');
-                    cell.classList.add(currentPlayer.color);
+                if (this.board[columnIndex, i] == 0) { //0 = empty; 1 = player1; 2 = player2;
+                    this.board[columnIndex, i] = playerId;
                     return `${columnNumber}${i}`;
                 }
             }
-        }
 
-        function getCellByPosition(x, y) {
-            return document.querySelector(`[position='${x}${y}'`);
-        }
+            return "";
+        },
 
-        function getPosition(element) {
-            return element.getAttribute('position');
-        }
+        calculateWinAny: function (startingPoint, playerId) {
+            const x = startingPoint[0];
+            const y = startingPoint[1];
+            return (calculateWinHorizontal(x, y, playerId) ||
+                calculateWinVertical(x, y, playerId) ||
+                calculateBackSlash(x, y, playerId) ||
+                calculateForwardSlash(x, y, playerId))
+        },
 
-        function endGame() {
-            const gameMessageElement = document.getElementById('game-message');
-            gameMessageElement.classList.add(currentPlayer.color);
-            gameMessageElement.innerHTML = `CONGRATULATIONS ${currentPlayer.name}!!`;
+        calculateWinHorizontal: function (x, y, playerId) {
+            const startingX = x;
+            let numInARow = 1;
 
-            isGameOver = true;
-        }
+            while (doesCellMatchPlayer(--x, y, playerId)) {
+                numInARow++;
+            }
 
-        /* Handle Players */
-        function togglePlayer() {
-            const newIndex = currentPlayer.id === players[0].id ? 1 : 0;
-            currentPlayer = players[newIndex];
-        }
+            x = startingX;
 
-        function clearOldPlayer() {
-            const gameMessageElement = document.getElementById('game-message');
-            gameMessageElement.classList.remove(currentPlayer.color);
-        }
+            while (doesCellMatchPlayer(++x, y, playerId)) {
+                numInARow++;
+            }
 
-        function addNewPlayer() {
-            const gameMessageElement = document.getElementById('game-message');
-            gameMessageElement.classList.add(currentPlayer.color);
+            return numInARow >= 4;
+        },
 
-            const nameElement = document.getElementById('player-name');
-            nameElement.innerHTML = currentPlayer.name;
-        }
+        calculateWinVertical: function (x, y, playerId) {
+            const startingY = y;
+            let numInARow = 1;
+
+            while (doesCellMatchPlayer(x, --y, playerId)) {
+                numInARow++;
+            }
+
+            y = startingY;
+
+            while (doesCellMatchPlayer(x, ++y, playerId)) {
+                numInARow++;
+            }
+
+            return numInARow >= 4;
+        },
+
+        calculateWinBackSlash: function (x, y, playerId) {
+            const startingX = x;
+            const startingY = y;
+            let numInARow = 1;
+
+            while (doesCellMatchPlayer(--x, --y, playerId)) {
+                numInARow++;
+            }
+
+            y = startingY;
+            x = startingX;
+
+            while (doesCellMatchPlayer(++x, ++y, playerId)) {
+                numInARow++;
+            }
+
+            return numInARow >= 4;
+        },
+
+        calculateWinForwardSlash: function (x, y, playerId) {
+            const startingX = x;
+            const startingY = y;
+            let numInARow = 1;
+
+            while (doesCellMatchPlayer(++x, --y, playerId)) {
+                numInARow++;
+            }
+
+            y = startingY;
+            x = startingX;
+
+            while (doesCellMatchPlayer(--x, ++y, playerId)) {
+                numInARow++;
+            }
+
+            return numInARow >= 4;
+        },
+
+        doesCellMatchPlayer: function (x, y, playerId) {
+            if (x < 0 || x === this.width || y < 0 || y === this.height) {
+                return false;
+            }
+            return this.board[x][y] == playerId;
+        },
+    };
+})();
+
+(() => {
+    var _ = self.Player = function (id, name, color) {
+        this.id = id;
+        this.name = name;
+        this.color = color;
+    };
+
+    _.prototype = {};
+})();
+
+(() => {
+    var _ = self.PlayerManager = function (players) {
+        this.players = players;
+        this.currentPlayer = players[0];
     }
-)();
+
+    _.prototype = {
+        togglePlayer: function () {
+            const newIndex = this.currentPlayer.id === this.players[0].id ? 1 : 0;
+            this.currentPlayer = players[newIndex];
+        },
+    }
+})();
+
+const height = 6;
+const width = 8;
+
+const players = [
+    new Player({
+        id: 0,
+        name: 'Abbott1',
+        color: 'red'
+    }),
+    new Player({
+        id: 1,
+        name: 'Costello2',
+        color: 'blue'
+    })
+];
+
+const playerManager = new PlayerManager(players);
+const board = new ConnectBoard({ height: height, width: width });
+board.createBoard();
+const boardView = new ConnectBoardView(board, playerManager);
+boardView.displayBoard();

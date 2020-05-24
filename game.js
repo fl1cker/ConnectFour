@@ -7,12 +7,45 @@
         this.isGameOver = false;
         this.showError = false;
         this.playerManager = playerManager;
-        this.displayBoard();
-        this.displayCurrentPlayer(this.currentPlayer(), this.currentPlayer());
         this.drawColor = 'orange';
+        this.restartGameEventHandler = this.restartGame.bind(this);
+        this.startGame();
     };
 
     _.prototype = {
+
+        startGame: function () {
+            this.displayBoard();
+            this.displayInitialPlayer(null, this.currentPlayer());
+            this.displayReplayButton();
+        },
+
+        restartGame: function () {
+            this.resetAll();
+            this.startGame();
+        },
+
+        resetAll: function () {
+            this.removeEventListeners();
+            this.resetBoard();
+            const oldPlayer = this.currentPlayer();
+            this.playerManager.resetCurrentPlayer();
+            const newPlayer = this.currentPlayer();
+            this.displayInitialPlayer(oldPlayer, newPlayer);
+            this.isGameOver = false;
+        },
+
+        resetBoard: function () {
+            this.connectBoard.board = this.connectBoard.board.map(row => row.map(cell => cell = 0));
+            const board = document.getElementById('board');
+            board.innerHTML = "";
+        },
+
+        removeEventListeners: function () {
+            const button = document.getElementById('replay-button');
+            button.removeEventListener('click', this.restartGameEventHandler);
+        },
+
         displayBoard: function () {
             const gameBoard = document.getElementById('board');
             const tbody = document.createElement('tbody');
@@ -29,6 +62,12 @@
                     row.appendChild(cell);
                 }
             }
+        },
+
+        displayReplayButton: function () {
+            const button = document.getElementById('replay-button');
+            button.addEventListener('click', this.restartGameEventHandler, false);
+            button.innerHTML = "Reset";
         },
 
         currentPlayer: function () {
@@ -83,6 +122,9 @@
             didSomeoneWin
                 ? this.displayWinner(currentPlayer)
                 : this.displayDraw(currentPlayer.color);
+
+            const replayElement = document.getElementById('replay-button');
+            replayElement.innerHTML = "Play Again?";
         },
 
         displayDraw: function (currentPlayerColor) {
@@ -99,14 +141,28 @@
         displayWinner: function (currentPlayer) {
             const gameMessageElement = document.getElementById('game-message');
             gameMessageElement.classList.add(currentPlayer.color);
-            gameMessageElement.innerHTML = `${currentPlayer.name} Wins!!`;
+
+            const instructionElement = document.getElementById('player-instruction')
+            instructionElement.innerHTML = ` Wins!!`;
+        },
+
+        displayInitialPlayer: function (oldPlayer, currentPlayer) { 
+            const gameMessageElement = document.getElementById('game-message');
+            gameMessageElement.classList.remove(this.drawColor);
+
+            this.displayCurrentPlayer(oldPlayer, currentPlayer);
+            const instructionElement = document.getElementById('player-instruction');
+            instructionElement.innerHTML = "'s Turn";
         },
 
         displayCurrentPlayer: function (oldPlayer, currentPlayer) {
             const gameMessageElement = document.getElementById('game-message');
             const nameElement = document.getElementById('player-name');
 
-            gameMessageElement.classList.remove(oldPlayer.color);
+            if (oldPlayer) {
+                gameMessageElement.classList.remove(oldPlayer.color);
+            }
+
             gameMessageElement.classList.add(currentPlayer.color);
             nameElement.innerHTML = currentPlayer.name;
         }
@@ -228,8 +284,6 @@
         },
 
         doesCellMatchPlayer: function (x, y, playerId) {
-            console.log(this.board);
-            console.log('x: ', x, 'y: ', y)
             if (x < 0 || x === this.width || y < 0 || y === this.height) {
                 return false;
             }
@@ -261,6 +315,9 @@
         },
         currentPlayer: function () {
             return this.currentPlayer;
+        },
+        resetCurrentPlayer: function () {
+            this.currentPlayer = players[0];
         }
     }
 })();

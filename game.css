@@ -19,7 +19,7 @@ body {
     font-size: 50px;
 }
 
-#game-message {
+#game-message, .button-row {
     width: 600px;
     text-align: center;
     color: white;
@@ -28,13 +28,14 @@ body {
 
 #board {
     background-color: yellow;
+    margin-bottom: 40px;
 }
 
 .cell {
     height: 50px;
     width: 50px;
     border-radius: 50%;
-    background-color: white;
+    background-color: rgb(245, 244, 244);
 }
 
 .red {
@@ -52,4 +53,18 @@ body {
 #game-base {
     border-radius: 5%/20%;
     background-color: blue;
+}
+
+.button-row {
+    margin: auto;
+    height: 50px;
+}
+
+#replay-button {
+    background-color: green;
+    color: white;
+    width: 120px;
+    height: inherit;
+    border-radius: 10px;
+    cursor: pointer;
 }

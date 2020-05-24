@@ -1,136 +1,171 @@
-(
-    () => {
-        var _ = self.ConnectBoardView = function (connectBoard, playerManager) {
-            this.connectBoard = connectBoard;
-            this.height = connectBoard.length;
-            this.width = connectBoard[0].length;
-            this.isGameOver = false;
-            this.showError = false;
-            this.playerManager = playerManager;
-        };
+(function () {
+    var _ = self.ConnectBoardView = function (connectBoard, playerManager) {
+        this.connectBoard = connectBoard;
+        this.board = connectBoard.board;
+        this.height = connectBoard.height;
+        this.width = connectBoard.width;
+        this.isGameOver = false;
+        this.showError = false;
+        this.playerManager = playerManager;
+        this.displayBoard();
+        this.displayCurrentPlayer(this.currentPlayer(), this.currentPlayer());
+        this.drawColor = 'orange';
+    };
 
-        _.prototype = {
-            displayBoard: function () {
-                const gameBoard = document.getElementById('board');
-                const tbody = document.createElement('tbody');
-                gameBoard.appendChild(tbody);
+    _.prototype = {
+        displayBoard: function () {
+            const gameBoard = document.getElementById('board');
+            const tbody = document.createElement('tbody');
+            gameBoard.appendChild(tbody);
 
-                for (let i = 0; i < this.height; i++) {
-                    const row = document.createElement('tr');
-                    tbody.appendChild(row);
-                    for (let j = 0; j < this.width; j++) {
-                        const cell = document.createElement('td');
-                        cell.setAttribute('position', j.toString() + i.toString());
-                        cell.className = 'cell';
-                        cell.addEventListener('click', executeTurn);
-                        row.appendChild(cell);
-                    }
+            for (let i = 0; i < this.height; i++) {
+                const row = document.createElement('tr');
+                tbody.appendChild(row);
+                for (let j = 0; j < this.width; j++) {
+                    const cell = document.createElement('td');
+                    cell.setAttribute('position', j.toString() + i.toString());
+                    cell.className = 'cell';
+                    cell.addEventListener('click', this.executeTurn.bind(this), false);
+                    row.appendChild(cell);
                 }
-            },
-
-            executeTurn: function (event) {
-                if (isGameOver)
-                    return;
-
-                var placedPosition = placeGamePiece(event.target, this.playerManager.currentPlayer);
-                if (!placedPosition) { return; }
-
-                if (this.connectBoard.calculateWinAny(placedPosition, currentPlayer.id)) {
-                    return endGame();
-                } else {
-                    this.playerManager.togglePlayer();
-                    displayCurrentPlayer(this.playerManager.currentPlayer);
-                }
-            },
-
-            placeGamePiece: function (element, currentPlayer) {
-                const position = getPosition(element);
-                const columnNumber = position[0];
-
-                const placedPosition = this.board.placeGamePieceInColumn(columnNumber, currentPlayer.id);
-
-                if (placedPosition) {
-                    const cell = getCellByPosition(placedPosition[0], placedPosition[1]);
-                    cell.classList.add(playerColor);
-                }
-
-                return placedPosition;
-            },
-
-            getCellByPosition: function (x, y) {
-                return document.querySelector(`[position='${x}${y}'`);
-            },
-
-            getPosition: function (element) {
-                return element.getAttribute('position');
-            },
-
-            endGame: function () {
-                const gameMessageElement = document.getElementById('game-message');
-                gameMessageElement.classList.add(currentPlayer.color);
-                gameMessageElement.innerHTML = `CONGRATULATIONS ${currentPlayer.name}!!`;
-
-                isGameOver = true;
-            },
-
-            displayCurrentPlayer: function (currentPlayer) {
-                const gameMessageElement = document.getElementById('game-message');
-                const nameElement = document.getElementById('player-name');
-
-                gameMessageElement.classList.remove(currentPlayer.color);
-                gameMessageElement.classList.add(currentPlayer.color);
-                nameElement.innerHTML = currentPlayer.name;
             }
-        };
-    }
+        },
+
+        currentPlayer: function () {
+            return this.playerManager.currentPlayer;
+        },
+
+        placeGamePiece: function (element, currentPlayer) {
+            const position = this.getPosition(element);
+            const columnNumber = position[0];
+
+            const placedPosition = this.connectBoard.placeGamePieceInColumn(columnNumber, currentPlayer.id);
+
+            if (placedPosition) {
+                const cell = this.getCellByPosition(placedPosition[0], placedPosition[1]);
+                cell.classList.add(currentPlayer.color);
+            }
+
+            return placedPosition;
+        },
+
+        executeTurn: function (event) {
+            if (this.isGameOver)
+                return;
+
+            var placedPosition = this.placeGamePiece(event.target, this.currentPlayer());
+
+            if (!placedPosition) { return; }
+
+            if (this.connectBoard.calculateWinAny(placedPosition, this.currentPlayer().id)) {
+                this.endGame(true, this.currentPlayer());
+            } else if (this.connectBoard.calculateIsDraw()) {
+                this.endGame(false, this.currentPlayer())
+            }
+            else {
+                const oldPlayer = this.currentPlayer();
+                this.playerManager.togglePlayer();
+                this.displayCurrentPlayer(oldPlayer, this.currentPlayer());
+            }
+        },
+
+        getCellByPosition: function (x, y) {
+            return document.querySelector(`[position='${x}${y}'`);
+        },
+
+        getPosition: function (element) {
+            return element.getAttribute('position');
+        },
+
+        endGame(didSomeoneWin, currentPlayer) {
+            this.isGameOver = true;
+
+            didSomeoneWin
+                ? this.displayWinner(currentPlayer)
+                : this.displayDraw(currentPlayer.color);
+        },
+
+        displayDraw: function (currentPlayerColor) {
+            const gameMessageElement = document.getElementById('game-message');
+            const instructionElement = document.getElementById('player-instruction');
+            const nameElement = document.getElementById('player-name');
+
+            gameMessageElement.classList.remove(currentPlayerColor);
+            gameMessageElement.classList.add(this.drawColor);
+            instructionElement.innerHTML = 'DRAW';
+            nameElement.innerHTML = '';
+        },
+
+        displayWinner: function (currentPlayer) {
+            const gameMessageElement = document.getElementById('game-message');
+            gameMessageElement.classList.add(currentPlayer.color);
+            gameMessageElement.innerHTML = `${currentPlayer.name} Wins!!`;
+        },
+
+        displayCurrentPlayer: function (oldPlayer, currentPlayer) {
+            const gameMessageElement = document.getElementById('game-message');
+            const nameElement = document.getElementById('player-name');
+
+            gameMessageElement.classList.remove(oldPlayer.color);
+            gameMessageElement.classList.add(currentPlayer.color);
+            nameElement.innerHTML = currentPlayer.name;
+        }
+    };
+}
 )();
 
 (() => {
     var _ = self.ConnectBoard = function (dimensions) {
         this.height = dimensions.height;
         this.width = dimensions.width;
-        this.board;
+        this.board = this.createBoard();
     };
 
     _.prototype = {
         createBoard: function () {
-            this.board = new Array(this.height);
+            const board = new Array(this.width);
             for (let i = 0; i < this.width; i++) {
-                this.board[i] = new Array(this.width).fill(0); //0 = empty; 1 = player1; 2 = player2
+                board[i] = new Array(this.height).fill(0); //0 = empty; 1 = player1; 2 = player2
             }
+
+            return board;
         },
 
+        /* something is broken here */
         placeGamePieceInColumn: function (columnIndex, playerId) {
-            for (let i = (height - 1); i >= 0; i--) {
-                if (this.board[columnIndex, i] == 0) { //0 = empty; 1 = player1; 2 = player2;
-                    this.board[columnIndex, i] = playerId;
-                    return `${columnNumber}${i}`;
+            for (let i = (this.height - 1); i >= 0; i--) {
+                if (this.board[columnIndex][i] == 0) { //0 = empty; 1 = player1; 2 = player2;
+                    this.board[columnIndex][i] = playerId;
+                    return `${columnIndex}${i}`;
                 }
             }
-
             return "";
         },
 
         calculateWinAny: function (startingPoint, playerId) {
             const x = startingPoint[0];
             const y = startingPoint[1];
-            return (calculateWinHorizontal(x, y, playerId) ||
-                calculateWinVertical(x, y, playerId) ||
-                calculateBackSlash(x, y, playerId) ||
-                calculateForwardSlash(x, y, playerId))
+            return (this.calculateWinHorizontal(x, y, playerId) ||
+                this.calculateWinVertical(x, y, playerId) ||
+                this.calculateWinBackSlash(x, y, playerId) ||
+                this.calculateWinForwardSlash(x, y, playerId))
+        },
+
+        calculateIsDraw: function () {
+            return !this.board.some(row => row.some(column => column == 0));
         },
 
         calculateWinHorizontal: function (x, y, playerId) {
             const startingX = x;
             let numInARow = 1;
 
-            while (doesCellMatchPlayer(--x, y, playerId)) {
+            while (this.doesCellMatchPlayer(--x, y, playerId)) {
                 numInARow++;
             }
 
             x = startingX;
 
-            while (doesCellMatchPlayer(++x, y, playerId)) {
+            while (this.doesCellMatchPlayer(++x, y, playerId)) {
                 numInARow++;
             }
 
@@ -141,13 +176,13 @@
             const startingY = y;
             let numInARow = 1;
 
-            while (doesCellMatchPlayer(x, --y, playerId)) {
+            while (this.doesCellMatchPlayer(x, --y, playerId)) {
                 numInARow++;
             }
 
             y = startingY;
 
-            while (doesCellMatchPlayer(x, ++y, playerId)) {
+            while (this.doesCellMatchPlayer(x, ++y, playerId)) {
                 numInARow++;
             }
 
@@ -159,14 +194,14 @@
             const startingY = y;
             let numInARow = 1;
 
-            while (doesCellMatchPlayer(--x, --y, playerId)) {
+            while (this.doesCellMatchPlayer(--x, --y, playerId)) {
                 numInARow++;
             }
 
             y = startingY;
             x = startingX;
 
-            while (doesCellMatchPlayer(++x, ++y, playerId)) {
+            while (this.doesCellMatchPlayer(++x, ++y, playerId)) {
                 numInARow++;
             }
 
@@ -178,14 +213,14 @@
             const startingY = y;
             let numInARow = 1;
 
-            while (doesCellMatchPlayer(++x, --y, playerId)) {
+            while (this.doesCellMatchPlayer(++x, --y, playerId)) {
                 numInARow++;
             }
 
             y = startingY;
             x = startingX;
 
-            while (doesCellMatchPlayer(--x, ++y, playerId)) {
+            while (this.doesCellMatchPlayer(--x, ++y, playerId)) {
                 numInARow++;
             }
 
@@ -193,6 +228,8 @@
         },
 
         doesCellMatchPlayer: function (x, y, playerId) {
+            console.log(this.board);
+            console.log('x: ', x, 'y: ', y)
             if (x < 0 || x === this.width || y < 0 || y === this.height) {
                 return false;
             }
@@ -201,8 +238,8 @@
     };
 })();
 
-(() => {
-    var _ = self.Player = function (id, name, color) {
+(function () {
+    var _ = self.Player = function ({ id, name, color }) {
         this.id = id;
         this.name = name;
         this.color = color;
@@ -211,7 +248,7 @@
     _.prototype = {};
 })();
 
-(() => {
+(function () {
     var _ = self.PlayerManager = function (players) {
         this.players = players;
         this.currentPlayer = players[0];
@@ -222,6 +259,9 @@
             const newIndex = this.currentPlayer.id === this.players[0].id ? 1 : 0;
             this.currentPlayer = players[newIndex];
         },
+        currentPlayer: function () {
+            return this.currentPlayer;
+        }
     }
 })();
 
@@ -230,12 +270,12 @@ const width = 8;
 
 const players = [
     new Player({
-        id: 0,
+        id: 1,
         name: 'Abbott1',
         color: 'red'
     }),
     new Player({
-        id: 1,
+        id: 2,
         name: 'Costello2',
         color: 'blue'
     })
@@ -243,6 +283,4 @@ const players = [
 
 const playerManager = new PlayerManager(players);
 const board = new ConnectBoard({ height: height, width: width });
-board.createBoard();
 const boardView = new ConnectBoardView(board, playerManager);
-boardView.displayBoard();

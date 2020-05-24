@@ -15,7 +15,7 @@ body {
     margin: auto;
 }
 
-#game-message, #player-name {
+#game-message, #player-name, #player-instruction {
     font-size: 50px;
 }
 
@@ -34,6 +34,7 @@ body {
     height: 50px;
     width: 50px;
     border-radius: 50%;
+    background-color: white;
 }
 
 .red {
@@ -42,6 +43,10 @@ body {
 
 .blue {
     background-color: rgb(0, 204, 255);
+}
+
+.orange {
+    background-color: orange;
 }
 
 #game-base {
